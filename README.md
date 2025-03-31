@@ -1,0 +1,1 @@
+see `lib/nobject.rb`
