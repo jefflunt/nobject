@@ -14,21 +14,8 @@ class Nobject
       loop do
         msg_size = @socket.recv(8).unpack('Q>').first
         msg = Marshal.load(@socket.recv(msg_size))
-        puts "Nobject got: #{msg.inspect}"
 
-        network_return([
-          :raise,
-          NoMethodError.new("undefined method '#{method}' for an instance of #{self.class.name} (NoMethodError)")
-        ]) unless msg[:method].to_s.start_with?('n_')
-
-        local_method = msg[:method].to_s.sub(/\An_/, '')
-        network_return([
-          :raise,
-          NoMethodError.new("undefined method '#{local_method}' for a network instance of #{@obj.class.name} (Nobject::NoMethodError)")
-        ]) unless @obj.respond_to?(local_method)
-
-        result = @obj.send(local_method, *msg[:args])
-        puts "returning #{result}"
+        result = @obj.send(msg[:method], *msg[:args]) #local_method, *msg[:args])
         network_return([
           :ok,
           result

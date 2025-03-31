@@ -14,11 +14,8 @@ class ProxyNobject
     @socket.send(obj_bytes, 0)
   end
 
-  def method_missing(method, args)
-    raise NoMethodError.new("undefined method '#{method}' for #{self.class.name}") unless method.start_with?('n_')
-
+  def method_missing(method, *args, **kwargs, &block)
     msg = { method: method, args: args }
-    puts "proxy sending: #{msg}"
     msg_bytes = Marshal.dump(msg)
 
     @socket.send([msg_bytes.length].pack('Q>'), 0)
@@ -26,7 +23,6 @@ class ProxyNobject
 
     return_size = @socket.recv(8).unpack('Q>').first
     return_data = Marshal.load(@socket.recv(return_size))
-    puts "proxy receiving #{return_size} bytes >> #{return_data.inspect}"
 
     case return_data.first
     when :ok then return_data.last
@@ -35,6 +31,17 @@ class ProxyNobject
       raise ProxyNobject::UnknownReturnDataType.new("unknown data type '#{return_data.first}' within ProxyNobject (ProxyNobject::UnknownReturnDataType)")
     end
   end
+
+  #####################################
+  # method overridden from Object class
+  #####################################
+  def !~(other);      method_missing(:is_a?, other);  end
+  def <=>(other);     method_missing(:<=>, other);    end
+  def ===(other);     method_missing(:<=>, other);    end
+  def is_a?(klass);   method_missing(:is_a?, klass);  end
+  def inspect;        method_missing(:inspect);       end
+  def object_id;      method_missing(:object_id);     end
 end
 
 class ProxyNobject::UnknownReturnDataType < RuntimeError; end
+class ProxyNobject::InvalidMethod < RuntimeError; end
