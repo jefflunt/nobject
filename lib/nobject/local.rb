@@ -24,16 +24,22 @@ module Nobject
       msg = { method: method, args: args }
       msg_bytes = Marshal.dump(msg)
 
-      @socket.send([msg_bytes.length].pack('Q>'), 0)
-      @socket.send(msg_bytes, 0)
+      begin
+        @socket.send([msg_bytes.length].pack('Q>'), 0)
+        @socket.send(msg_bytes, 0)
+      rescue Exception
+        raise Local::MethodRequestFailure.new("did not receive response from call to `#{method}' over the network")
+      end
 
-      return_size = begin
-                      @socket.recv(8).unpack('Q>').first
+      return_data = begin
+                      Marshal.load(
+                        @socket.recv(
+                          @socket.recv(8).unpack('Q>').first
+                        )
+                      )
                     rescue Exception
-                      raise Local::MethodFailure.new("failed to call method `#{method}' over the network")
+                      raise Local::MethodResponseFailure.new("did not receive response from call to `#{method}' over the network")
                     end
-
-      return_data = Marshal.load(@socket.recv(return_size))
 
       case return_data.first
       when :ok then return_data.last
@@ -56,5 +62,6 @@ module Nobject
 
   class Local::UnknownReturnDataType < RuntimeError; end
   class Local::InvalidMethod < RuntimeError; end
-  class Local::MethodFailure < RuntimeError; end
+  class Local::MethodRequestFailure < RuntimeError; end
+  class Local::MethodResponseFailure < RuntimeError; end
 end
