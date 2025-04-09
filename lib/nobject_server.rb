@@ -5,6 +5,9 @@ require_relative './nobject'
 # this class listens for incoming requests to store an object over the network,
 # accepts connections and then hands those sockets off to server object storage
 # and invocation.
+#
+# ex:
+#   NobjectServer.new(1234).start!
 class NobjectServer
   def initialize(port)
     @server = TCPServer.new(port)

@@ -6,6 +6,10 @@ class ProxyNobject
   # host: the hostname of the server to push obj to
   # port: the port number of the server to push obj to
   # obj: the obj to store over the network
+  #
+  # ex:
+  #   # this will create a new ProxyNobject, then put it to the specified server
+  #   ProxyNobject.new('localhost', 1234, <object>)
   def initialize(host, port, obj)
     @socket = TCPSocket.new(host, port)
     obj_bytes = Marshal.dump(obj)
