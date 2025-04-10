@@ -18,9 +18,12 @@ use them like they're still local
 
 with this gem you:
 1. start a `nobject` server
-2. instantiate almost any object* locally
+2. instantiate almost* any object locally
 3. push that object over the network to the server
 4. invoke methods on the remote object as if it's local
+
+_*you can't create IO objects, or other objects that depend on something
+specific to the machine they were instantiated on_
 
 ## example
 
