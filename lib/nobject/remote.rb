@@ -17,7 +17,7 @@ module Nobject
           msg_size = @socket.recv(8).unpack('Q>').first
           msg = Marshal.load(@socket.recv(msg_size))
 
-          result = @obj.send(msg[:method], *msg[:args]) #local_method, *msg[:args])
+          result = @obj.send(msg[:method], *msg[:args])
           network_return([
             :ok,
             result

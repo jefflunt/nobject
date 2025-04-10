@@ -1,63 +1,56 @@
-`nobject` - network object
+`nobject` - network-hosted objects + rpc
 
-this gem lets you write a main program that ships code off to other client
-programs, yet you can invoke methods on the remote code like it's present in
-your main program.
+create objects locally
+push them to a remote server across the network
+use them like they're still local
 
-here's how it works: the main program creates instaces of `ProxyNobject`, which
-wrap objects within the main program, then serialize those objects, and send
-them over to the `NobjectServer`. once the objects are on the `NobjectServer`
-they stay on that server. now the main program can call methods on the
-`ProxyObject` instances in the main program, but the computation is done on the
-`Nobject` instances on the `NobjectServer`.
-
-you can expand this to run as many `NobjectServer` instances as you want, with
-as many `Nobject` instances per server as makes sense for the amount of compute
-and RAM you have on each system.
-
-you can also use this mechanism to spread in-memory objects in Ruby to be
-multi-core programs on the same computer just be running a `NobjectServer` on
-the local computer.
-
-have 8 physical cores on your computer? then spawn 8 `NobjectServer` instances
-on your local machine and you'll be able to use all 8 cores on your computer
-while writing all your program login within the main program.
-
-```
--------------------     -----------------
-| main program    | --> | NobjectServer |
-|                 |     |               |
-| - ProxyNobject1 | --> | - Nobject 1   |
-| - ProxyNobject2 | --> | - Nobject 2   |
-| - ...           |     |   ...         |
-| - ProxyNobject2 | --> | - Nobject n   |
-------------------      -----------------
+```plaintext
+                    -> rpc ->
+----------------------     ---------------------------
+| main program       | --> | Nobject::Server         |
+|                    |     |                         |
+| - Nobject::Local 1 | --> | - Nobject::Remote 1     |
+| - Nobject::Local 2 | --> | - Nobject::Remote 2     |
+| - ...              |     |   ...                   |
+| - Nobject::Local n | --> | - Nobject::Remote n     |
+---------------------      ---------------------------
 ```
 
-here's some example code:
+with this gem you:
+1. start a `nobject` server
+2. instantiate almost any object* locally
+3. push that object over the network to the server
+4. invoke methods on the remote object as if it's local
+
+## example
 
 ```ruby
-# for the server code, just load the game and start a server on port `1234`
-require 'nobject'
+# start a nobject server on port 1234
+require 'nobject/server'
 
 NobjectServer.new(1234).start!
 ```
 
 ```ruby
 # in the main program:
-require 'nobject'
+require 'nobject/local'
 
-n = ProxyNobject.new('localhost', 1234, 5)
+n = Nobject::Local.new('localhost', 1234, 5)
 puts n + 7
+
+# => 12
 ```
 
-this program will print "12", but the computation is happening within the
-`NobjectServer`, and is returned to the `ProxyNobject`. this works because the
-`ProxyNobejct` delegates its method calls to the remote `Nobject`, the
-computation happens there, and the return value comes back to the main program
-where it's printed, all with the main program code looking exactly like normal
-ruby code.
+this program will print "12", but the method execution is happening within the
+`Nobject::Server`, and is returned via the `Nobject::Local`. this works because
+the `Nobject::Local` delegates its method calls to a matching `Nobject::Remote`
+object running on the `Nobject::Server`, the computation happens there, and the
+return value comes back to the main program where it's printed.
 
-there's just one catch: since you're technicall invoking methods on a remote
-object over the network, any method call can throw an exception if the network
-falls over.
+all of this happens within the main program's code, giving you fully
+remote/multi-process/multi-core computation in ruby without changing the
+language syntax.
+
+there's just one catch: since you're technically invoking methods on a remote
+object over the network, calling methods can now fail due to network connection
+issues.
