@@ -31,6 +31,7 @@ module Nobject
         raise Local::MethodRequestFailure.new("did not receive response from call to `#{method}' over the network")
       end
 
+      retries = 0
       return_data = begin
                       Marshal.load(
                         @socket.recv(
@@ -38,6 +39,8 @@ module Nobject
                         )
                       )
                     rescue Exception
+                      retries += 1
+                      retry if retries < 3
                       raise Local::MethodResponseFailure.new("did not receive response from call to `#{method}' over the network")
                     end
 
