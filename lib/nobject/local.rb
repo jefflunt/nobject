@@ -41,7 +41,7 @@ module Nobject
                     rescue Exception => e
                       error_msg = <<~MSG
                         did not receive response from call to `#{method}' over the network
-                        would have been msg_id #{msg_counter} OR #{msg_counter + 1}
+                        would have been msg_id #{@msg_counter} OR #{@msg_counter + 1}
                         caused by #{e.class.name}
                           exception backtrace:
                           #{e.backtrace.join("\n    ")}
