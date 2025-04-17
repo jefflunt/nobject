@@ -31,6 +31,7 @@ module Nobject
       data_bytes = Marshal.dump(data)
 
       @socket.send([data_bytes.length].pack('Q>'), 0)
+      File.open('/tmp/nobject.log', 'a') {|f| f.puts "    RMResult:#{@msg_counter += 1} #{data_bytes.length}"; f.flush }
       @socket.send(data_bytes, 0)
     end
   end
