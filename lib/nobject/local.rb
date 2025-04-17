@@ -17,7 +17,7 @@ module Nobject
       @socket = TCPSocket.new(host, port)
       obj_bytes = Marshal.dump(obj)
 
-      File.open('/tmp/nobject.log', 'a') {|f| f.puts "L:#{@msg_counter += 1} #{obj_bytes.length}"; f.flush }
+      File.open('/tmp/nobject.log', 'a') {|f| f.puts "L:##{@msg_counter += 1} sz#{obj_bytes.length}"; f.flush }
       @socket.send([obj_bytes.length].pack('Q>'), 0)
       @socket.send(obj_bytes, 0)
     end
@@ -28,7 +28,7 @@ module Nobject
 
       begin
         @socket.send([msg_bytes.length].pack('Q>'), 0)
-        File.open('/tmp/nobject.log', 'a') {|f| f.puts "  LMS:#{@msg_counter += 1} #{msg_bytes.length}"; f.flush }
+        File.open('/tmp/nobject.log', 'a') {|f| f.puts "  LMS:##{@msg_counter += 1} sz#{msg_bytes.length}"; f.flush }
         @socket.send(msg_bytes, 0)
       rescue Exception
         raise Local::MethodRequestFailure.new("did not receive response from call to `#{method}' over the network")
@@ -36,7 +36,7 @@ module Nobject
 
       return_data = begin
                       msg_size = @socket.recv(8).unpack('Q>').first
-                      File.open('/tmp/nobject.log', 'a') {|f| f.puts "    LMGotit :#{@msg_counter += 1} #{msg_size}"; f.flush }
+                      File.open('/tmp/nobject.log', 'a') {|f| f.puts "    LMGotit :##{@msg_counter += 1} sz#{msg_size}"; f.flush }
                       Marshal.load(@socket.recv(msg_size))
                     rescue Exception
                       raise Local::MethodResponseFailure.new("did not receive response from call to `#{method}' over the network")

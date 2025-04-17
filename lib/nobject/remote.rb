@@ -7,7 +7,7 @@ module Nobject
       @msg_counter = 0
       @socket = socket
       obj_size = @socket.recv(8).unpack('Q>').first
-      File.open('/tmp/nobject.log', 'a') {|f| f.puts "R:#{@msg_counter += 1} #{obj_size}"; f.flush }
+      File.open('/tmp/nobject.log', 'a') {|f| f.puts "R:##{@msg_counter += 1} sz#{obj_size}"; f.flush }
       @obj = Marshal.load(@socket.recv(obj_size))
     end
 
@@ -15,7 +15,7 @@ module Nobject
       Thread.new do
         loop do
           msg_size = @socket.recv(8).unpack('Q>').first
-          File.open('/tmp/nobject.log', 'a') {|f| f.puts "  RMR:#{@msg_counter += 1} #{msg_size}"; f.flush }
+          File.open('/tmp/nobject.log', 'a') {|f| f.puts "  RMR:##{@msg_counter += 1} sz#{msg_size}"; f.flush }
           msg = Marshal.load(@socket.recv(msg_size))
 
           result = @obj.send(msg[:method], *msg[:args])
@@ -31,7 +31,7 @@ module Nobject
       data_bytes = Marshal.dump(data)
 
       @socket.send([data_bytes.length].pack('Q>'), 0)
-      File.open('/tmp/nobject.log', 'a') {|f| f.puts "    RMResult:#{@msg_counter += 1} #{data_bytes.length}"; f.flush }
+      File.open('/tmp/nobject.log', 'a') {|f| f.puts "    RMResult:##{@msg_counter += 1} sz#{data_bytes.length}"; f.flush }
       @socket.send(data_bytes, 0)
     end
   end
