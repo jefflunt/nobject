@@ -38,8 +38,15 @@ module Nobject
                       msg_size = @socket.recv(8).unpack('Q>').first
                       File.open('/tmp/nobject.log', 'a') {|f| f.puts "    LMGotit :##{@msg_counter += 1} sz#{msg_size}"; f.flush }
                       Marshal.load(@socket.recv(msg_size))
-                    rescue Exception
-                      raise Local::MethodResponseFailure.new("did not receive response from call to `#{method}' over the network")
+                    rescue Exception => e
+                      error_msg = <<~MSG
+                        did not receive response from call to `#{method}' over the network
+                        would have been msg_id #{msg_counter} OR #{msg_counter + 1}
+                        caused by #{e.class.name}
+                          exception backtrace:
+                          #{e.backtrace.join("\n    ")}
+                      MSG
+                      raise Local::MethodResponseFailure.new(error_msg)
                     end
 
       case return_data.first
