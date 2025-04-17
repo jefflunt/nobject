@@ -1,5 +1,3 @@
-require 'socket'
-
 module Nobject
   # this class is used by the Nobject::Server to receive objects pushed to the
   # Nobject::Server, listens for method invocations over the network, and sends
@@ -8,6 +6,7 @@ module Nobject
     def initialize(socket)
       @socket = socket
       obj_size = @socket.recv(8).unpack('Q>').first
+      File.open('/tmp/nobject.log', 'w') {|f| f.puts "R:#{obj_size}"; f.flush }
       @obj = Marshal.load(@socket.recv(obj_size))
     end
 

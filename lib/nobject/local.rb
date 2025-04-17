@@ -16,6 +16,7 @@ module Nobject
       @socket = TCPSocket.new(host, port)
       obj_bytes = Marshal.dump(obj)
 
+      File.open('/tmp/nobject.log', 'w') {|f| f.puts "L:#{obj_bytes.length}"; f.flush }
       @socket.send([obj_bytes.length].pack('Q>'), 0)
       @socket.send(obj_bytes, 0)
     end
