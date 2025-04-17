@@ -4,9 +4,10 @@ module Nobject
   # the method invocations onwards to this object
   class Remote
     def initialize(socket)
+      @msg_counter = 0
       @socket = socket
       obj_size = @socket.recv(8).unpack('Q>').first
-      File.open('/tmp/nobject.log', 'a') {|f| f.puts "R:#{obj_size}"; f.flush }
+      File.open('/tmp/nobject.log', 'a') {|f| f.puts "R:#{@msg_counter += 1} #{obj_size}"; f.flush }
       @obj = Marshal.load(@socket.recv(obj_size))
     end
 
@@ -14,6 +15,7 @@ module Nobject
       Thread.new do
         loop do
           msg_size = @socket.recv(8).unpack('Q>').first
+          File.open('/tmp/nobject.log', 'a') {|f| f.puts "  RMR:#{@msg_counter += 1} #{msg_size}"; f.flush }
           msg = Marshal.load(@socket.recv(msg_size))
 
           result = @obj.send(msg[:method], *msg[:args])
