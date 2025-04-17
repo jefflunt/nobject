@@ -6,7 +6,7 @@ module Nobject
     def initialize(socket)
       @socket = socket
       obj_size = @socket.recv(8).unpack('Q>').first
-      File.open('/tmp/nobject.log', 'w') {|f| f.puts "R:#{obj_size}"; f.flush }
+      File.open('/tmp/nobject.log', 'a') {|f| f.puts "R:#{obj_size}"; f.flush }
       @obj = Marshal.load(@socket.recv(obj_size))
     end
 
