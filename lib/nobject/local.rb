@@ -20,6 +20,7 @@ module Nobject
       File.open('/tmp/nobject.log', 'a') {|f| f.puts "L:##{@msg_counter += 1} sz#{obj_bytes.length}"; f.flush }
       @socket.send([obj_bytes.length].pack('Q>'), 0)
       @socket.send(obj_bytes, 0)
+      @socket.flush
     end
 
     def method_missing(method, *args, **kwargs, &block)
@@ -30,6 +31,7 @@ module Nobject
         @socket.send([msg_bytes.length].pack('Q>'), 0)
         File.open('/tmp/nobject.log', 'a') {|f| f.puts "  LMS:##{@msg_counter += 1} sz#{msg_bytes.length} m:#{method}"; f.flush }
         @socket.send(msg_bytes, 0)
+        @socket.flush
       rescue Exception
         raise Local::MethodRequestFailure.new("did not receive response from call to `#{method}' over the network")
       end

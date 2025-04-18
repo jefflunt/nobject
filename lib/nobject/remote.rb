@@ -33,6 +33,7 @@ module Nobject
       @socket.send([data_bytes.length].pack('Q>'), 0)
       File.open('/tmp/nobject.log', 'a') {|f| f.puts "    RMResult:##{@msg_counter += 1} sz#{data_bytes.length}"; f.flush }
       @socket.send(data_bytes, 0)
+      @socket.flush
     end
   end
 
