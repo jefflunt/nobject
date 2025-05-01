@@ -38,8 +38,8 @@ module Nobject
 
       return_data = begin
                       msg_size = @socket.recv(8).unpack('Q>').first
-                      File.open('/tmp/nobject.log', 'a') {|f| f.puts "    LMGotit :##{@msg_counter += 1} sz#{msg_size} m:#{method}"; f.flush }
                       raw_bytes = @socket.recv(msg_size)
+                      File.open('/tmp/nobject.log', 'a') {|f| f.puts "    LMGotit :##{@msg_counter += 1} sz#{msg_size} bytes:#{raw_bytes.length} m:#{method}"; f.flush }
                       Marshal.load(raw_bytes)
                     rescue Exception => e
                       error_msg = <<~MSG
