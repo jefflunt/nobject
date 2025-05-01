@@ -15,6 +15,8 @@ module Nobject
     def initialize(host, port, obj)
       @msg_counter = 0
       @socket = TCPSocket.new(host, port)
+      @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
+
       obj_bytes = Marshal.dump(obj)
 
       File.open('/tmp/nobject.log', 'a') {|f| f.puts "L:##{@msg_counter += 1} sz#{obj_bytes.length}"; f.flush }
