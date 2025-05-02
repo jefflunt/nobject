@@ -5,6 +5,8 @@ module Nobject
   # it to a Nobject::Serve4r, which will then  send method calls to a matching
   # Nobject::Remote object
   class Local
+    MAX_RETRIES = 3
+
     # host: the hostname of the server to push obj to
     # port: the port number of the server to push obj to
     # obj: the obj to store over the network
@@ -29,36 +31,57 @@ module Nobject
       msg = { method: method, args: args }
       msg_bytes = Marshal.dump(msg)
 
-      begin
-        @socket.send([msg_bytes.length].pack('Q>'), 0)
-        File.open('/tmp/nobject.log', 'a') {|f| f.puts "  LMS:##{@msg_counter += 1} sz#{msg_bytes.length} m:#{method}"; f.flush }
-        @socket.send(msg_bytes, 0)
-        @socket.flush
-      rescue Exception
-        raise Local::MethodRequestFailure.new("did not receive response from call to `#{method}' over the network")
-      end
+      retries = 0
+      loop do
+        raise MethodInvocationRetriesExceeded.new("Exceeded retry limit (#{MAX_RETRIES})") if retries == MAX_RETRIES
 
-      return_data = begin
-                      msg_size = @socket.recv(8).unpack('Q>').first
-                      raw_bytes = @socket.recv(msg_size)
-                      File.open('/tmp/nobject.log', 'a') {|f| f.puts "    LMGotit :##{@msg_counter += 1} sz#{msg_size} bytes:#{raw_bytes.length} m:#{method}"; f.flush }
-                      Marshal.load(raw_bytes)
-                    rescue Exception => e
-                      error_msg = <<~MSG
-                        did not receive response from call to `#{method}' over the network
-                        would have been msg_id #{@msg_counter} OR #{@msg_counter + 1} when trying to receive #{msg_size} bytes
-                        caused by #{e.class.name}
-                          exception backtrace:
-                          #{e.backtrace.join("\n    ")}
-                      MSG
-                      raise Local::MethodResponseFailure.new(error_msg)
-                    end
+        begin
+          @socket.send([msg_bytes.length].pack('Q>'), 0)
+          File.open('/tmp/nobject.log', 'a') {|f| f.puts "  LMS:##{@msg_counter += 1} sz#{msg_bytes.length} m:#{method}"; f.flush }
+          @socket.send(msg_bytes, 0)
+          @socket.flush
+        rescue Exception
+          raise Local::MethodRequestFailure.new("did not receive response from call to `#{method}' over the network")
+        end
 
-      case return_data.first
-      when :ok then return_data.last
-      when :raise then raise return_data.last
-      else
-        raise Local::UnknownReturnDataType.new("unknown data type '#{return_data.first}' within Nobject::Local (Nobject::Local::UnknownReturnDataType)")
+        return_data = begin
+                        msg_size = @socket.recv(8).unpack('Q>').first
+                        raw_bytes = @socket.recv(msg_size)
+                        File.open('/tmp/nobject.log', 'a') {|f| f.puts "    LMGotit :##{@msg_counter += 1} sz#{msg_size} bytes:#{raw_bytes.length} m:#{method}"; f.flush }
+                        if msg_size != raw_bytes.length
+                          retries += 1
+                          print "\a"  # TODO: consider removing this after the
+                                      #   retry logic seems solid, it's extra,
+                                      #   literal noise :)
+                          redo
+                        end
+
+                        Marshal.load(raw_bytes)
+                      rescue Exception => e
+                        # TODO: consider removing this rescue block:
+                        #   this rescue may be unreachable now, since the only
+                        #   time it used to happen was when:
+                        #     msg_size != raw_bytes.length
+                        #
+                        #   ... which is now handled by the retry logic above
+                        error_msg = <<~MSG
+                          did not receive response from call to `#{method}' over the network
+                          would have been msg_id #{@msg_counter} OR #{@msg_counter + 1} when trying to receive #{msg_size} bytes
+                          caused by #{e.class.name}
+                            exception backtrace:
+                            #{e.backtrace.join("\n    ")}
+                        MSG
+                        raise Local::MethodResponseFailure.new(error_msg)
+                      end
+
+        break (
+          case return_data.first
+          when :ok then return_data.last
+          when :raise then raise return_data.last
+          else
+            raise Local::UnknownReturnDataType.new("unknown data type '#{return_data.first}' within Nobject::Local (Nobject::Local::UnknownReturnDataType)")
+          end
+        )
       end
     end
 
@@ -77,4 +100,5 @@ module Nobject
   class Local::InvalidMethod < RuntimeError; end
   class Local::MethodRequestFailure < RuntimeError; end
   class Local::MethodResponseFailure < RuntimeError; end
+  class Local::MethodInvocationRetriesExceeded < RuntimeError; end
 end
