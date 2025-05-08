@@ -50,9 +50,7 @@ module Nobject
                         File.open('/tmp/nobject.log', 'a') {|f| f.puts "    LMGotit :##{@msg_counter += 1} sz#{msg_size} bytes:#{raw_bytes.length} m:#{method}"; f.flush }
                         if msg_size != raw_bytes.length
                           retries += 1
-                          print "\a"  # TODO: consider removing this after the
-                                      #   retry logic seems solid, it's extra,
-                                      #   literal noise :)
+                          File.open('/tmp/nobject.log', 'a') {|f| f.puts "    LMGotitRETRY"; f.flush }
                           redo
                         end
 
